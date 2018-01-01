@@ -107,17 +107,48 @@ class DynamicActiveQuery extends ActiveQuery
             );
         }
 
+        $isDefault = false;
+
         if (empty($this->select)) {
-            $this->select[] = '*';
+            list(, $alias) = $this->getTableNameAndAlias();
+            $this->select = ["$alias.*"];
+            $isDefault = true;
+
         }
 
-        if (is_array($this->select) && in_array('*', $this->select)) {
+        if (is_array($this->select) && $isDefault) {
             $db = $modelClass::getDb();
             $this->select[$this->_dynamicColumn] =
-                'COLUMN_JSON(' . $db->quoteColumnName($this->_dynamicColumn) . ')';
+                'COLUMN_JSON(' . $this->getPrimaryTableName() . '.'. $db->quoteColumnName($this->_dynamicColumn) . ')';
         }
 
         return parent::prepare($builder);
+    }
+
+    private function getTableNameAndAlias()
+    {
+        if (empty($this->from)) {
+            /* @var $modelClass ActiveRecord */
+            $modelClass = $this->modelClass;
+            $tableName = $modelClass::tableName();
+        } else {
+            $tableName = '';
+            foreach ($this->from as $alias => $tableName) {
+                if (is_string($alias)) {
+                    return [$tableName, $alias];
+                } else {
+                    break;
+                }
+            }
+        }
+
+        if (preg_match('/^(.*?)\s+({{\w+}}|\w+)$/', $tableName, $matches)) {
+            $alias = $matches[2];
+        } else {
+            $alias = $tableName;
+        }
+
+        return [$tableName, $alias];
     }
 
     /**
