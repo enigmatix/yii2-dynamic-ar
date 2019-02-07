@@ -125,7 +125,7 @@ class DynamicActiveQuery extends ActiveQuery
         return parent::prepare($builder);
     }
 
-    private function getTableNameAndAlias()
+    protected function getTableNameAndAlias()
     {
         if (empty($this->from)) {
             /* @var $modelClass ActiveRecord */
